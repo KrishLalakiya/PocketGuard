@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PocketGuard Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="modal-overlay" id="addTransactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>New Transaction</h3>
+                <i class="fas fa-times close-modal" id="closeModal"></i>
+            </div>
+
+            <div class="txn-type-wrapper">
+                <input type="radio" name="txn-type" id="type-expense" value="expense" checked
+                    onchange="updateCategories('expense')">
+                <label for="type-expense" class="txn-type-option expense">Expense</label>
+
+                <input type="radio" name="txn-type" id="type-income" value="income"
+                    onchange="updateCategories('income')">
+                <label for="type-income" class="txn-type-option income">Income</label>
+            </div>
+
+            <div class="form-group">
+                <label>Amount</label>
+                <div class="input-with-icon">
+                    <span>$</span>
+                    <input type="number" class="form-input" id="txn-amount" placeholder="0.00"
+                        style="padding-left: 30px;">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Date</label>
+                    <input type="date" class="form-input" id="txn-date">
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                    <label>Time <small>(Optional)</small></label>
+                    <input type="time" class="form-input" id="txn-time">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-input" id="txn-category">
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" class="form-input" id="txn-desc" placeholder="e.g. Weekly Groceries">
+            </div>
+
+            <button class="add-btn submit-btn" id="saveTransactionBtn">
+                Save Transaction
+            </button>
+        </div>
+    </div>
+    <div class="modal-overlay" id="filterModal">
+        <div class="modal-content filter-modal-content">
+            <div class="modal-header">
+                <h3>Filter Transactions</h3>
+                <i class="fas fa-times close-modal" onclick="closeFilterModal()"></i>
+            </div>
+
+            <div class="filter-grid">
+                <div class="filter-types">
+                    <small style="color: var(--text-muted); margin-bottom: 5px; display:block;">Type</small>
+                    <button class="filter-btn" id="filter-btn-income" onclick="toggleFilterType('income')">
+                        <div style="width: 8px; height: 8px; background: #00d2aa; border-radius: 50%;"></div> Income
+                    </button>
+                    <button class="filter-btn" id="filter-btn-expense" onclick="toggleFilterType('expense')">
+                        <div style="width: 8px; height: 8px; background: #ff754c; border-radius: 50%;"></div> Expense
+                    </button>
+                </div>
+
+                <div class="filter-cats" id="filter-cats-list">
+                </div>
+            </div>
+
+            <div
+                style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <button onclick="clearFilters()"
+                    style="background: none; border: none; color: var(--text-muted); cursor: pointer;">Clear
+                    All</button>
+                <button onclick="applyFilters()" class="compact-btn" style="padding: 0 25px; height: 40px;">Apply
+                    Filters</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="dateModal">
+        <div class="modal-content" style="width: 350px;">
+            <div class="modal-header">
+                <h3>Filter by Date</h3>
+                <i class="fas fa-times close-modal" onclick="closeDateModal()"></i>
+            </div>
+
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" class="form-input" id="filter-start-date">
+            </div>
+
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" class="form-input" id="filter-end-date">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="clearDateFilter()"
+                    style="flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 12px; border-radius: 12px; cursor: pointer;">Clear</button>
+                <button onclick="applyDateFilter()" class="submit-btn" style="flex: 1; margin-top: 0;">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:40;">
+    </div>
+
+    <header class="top-header">
+        <div class="header-left">
+            <div class="menu-icon-wrapper" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-wallet"></i></div>
+                <span>PocketGuard</span>
+            </div>
+            <p>Track your financial health in real-time</p>
+        </div>
+
+        <div class="header-right">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search transactions...">
+            </div>
+            <div class="notification-icon">
+                <i class="far fa-bell"></i>
+                <span class="badge"></span>
+            </div>
+            <div class="user-profile">
+                <div class="text-info">
+                    <span class="name">Alex Johnson</span>
+                    <span class="role">Premium</span>
+                </div>
+                <img src="https://i.pravatar.cc/100?img=33" alt="User">
+            </div>
+        </div>
+    </header>
+
+    <aside class="sidebar collapsed" id="sidebar">
+        <ul class="nav-links">
+            <li>
+                <a href="#" class="active">
+                    <div class="icon"><i class="fas fa-th-large"></i></div>
+                    <span class="link-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="far fa-user"></i></div>
+                    <span class="link-text">Account</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="fas fa-exchange-alt"></i></div>
+                    <span class="link-text">Transaction</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                    <span class="link-text">Cash Flow</span>
+                </a>
+            </li>
+            <!-- <li>
+                <a href="#">
+                    <div class="icon"><i class="far fa-file-alt"></i></div>
+                    <span class="link-text">Report</span>
+                </a>
+            </li> -->
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="fas fa-book"></i></div>
+                    <span class="link-text">Budget</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="fas fa-bullseye"></i></div>
+                    <span class="link-text">Goals</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <ul class="nav-links">
+                <li>
+                    <a href="#">
+                        <div class="icon"><i class="fas fa-sign-out-alt"></i></div>
+                        <span class="link-text">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content expanded" id="mainContent">
+
+        <section id="view-dashboard" class="view-section">
+
+            <div class="top-row">
+                <div class="card balance-card-top">
+                    <div class="balance-info-left">
+                        <small class="label-text">Total Balance</small>
+                        <div class="amount-row">
+                            <h2 id="total-balance-display">$0.00</h2>
+                            <span class="tag positive">
+                                <i class="fas fa-arrow-up"></i> 45.2%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="balance-action-right">
+                        <button class="add-txn-btn compact-btn" id="openModalBtn">
+                            <i class="fas fa-plus"></i>&nbsp;&nbsp;Add Transaction
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card survival-card">
+                    <div class="card-header">
+                        <h3>Monthly Survival Status</h3>
+                        <span id="survival-text">100% Left</span>
+                    </div>
+
+                    <div class="progress-bg">
+                        <div class="progress-bar" id="survival-bar" style="width: 100%"></div>
+                    </div>
+
+                    <div
+                        style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                        <div style="font-size: 13px; color: #808191;">
+                            Target Budget: <span id="budget-display"
+                                style="color: white; font-weight: 600;">$0.00</span>
+                        </div>
+                        <button id="setBudgetBtn"
+                            style="background: rgba(108, 93, 211, 0.1); color: #6c5dd3; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s;">
+                            Set Budget
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="left-column">
+
+                    <div class="card actions-card">
+                        <div class="middle-stats-row">
+                            <div class="card mid-card balance-month">
+                                <small class="text-muted" style="font-size: 14px;">Your Net Balance for this
+                                    Month</small>
+
+                                <div class="mid-amount-wrapper">
+                                    <h3 id="monthly-balance-display">$0.00</h3>
+                                    <span class="tag positive mini"><i class="fas fa-arrow-up"></i> 45.2%</span>
+                                </div>
+                            </div>
+
+                            <div class="card mid-card income-month">
+                                <div class="icon-circle down"><i class="fas fa-arrow-down"></i></div>
+                                <div class="mid-info">
+                                    <small class="text-muted">Income</small>
+                                    <h3 id="total-income-display">$0.00</h3>
+                                    <span class="tag positive badge">+5%</span>
+                                </div>
+                            </div>
+
+                            <div class="card mid-card expense-month">
+                                <div class="icon-circle up"><i class="fas fa-arrow-up"></i></div>
+                                <div class="mid-info">
+                                    <small class="text-muted">Expence</small>
+                                    <h3 id="total-expense-display">$0.00</h3>
+                                    <span class="tag negative badge">-3.1%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="chart-header">
+                            <h3>Cash Flow Analytics</h3>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <div class="dot" style="background: #6c5dd3;"></div> Income
+                                </div>
+                                <div class="legend-item">
+                                    <div class="dot" style="background: #3f8cff;"></div> Expense
+                                </div>
+                                <select class="year-select">
+                                    <option>2023</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="cashFlowChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <div class="card">
+                        <div class="chart-header">
+                            <h3>Spending</h3>
+                            <select id="spending-timeframe" onchange="updateDashboard()"
+                                style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; outline: none;">
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div class="spending-chart-wrapper">
+                            <canvas id="spendingChart"></canvas>
+                            <div class="spending-text">
+                                <h3 id="spending-total">$0.00</h3>
+                                <p>Total Spent</p>
+                            </div>
+                        </div>
+
+                        <div class="category-list" id="spending-legend">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="savings-header"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3>Savings Goal</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <i class="fas fa-chevron-left" onclick="manualRotateGoal(-1)"
+                                    style="color: var(--text-muted); cursor: pointer; padding: 5px;"></i>
+                                <i class="fas fa-chevron-right" onclick="manualRotateGoal(1)"
+                                    style="color: var(--text-muted); cursor: pointer; padding: 5px;"></i>
+                            </div>
+                        </div>
+
+                        <div id="savings-goal-content">
+                            <small class="text-muted" id="dash-goal-name">No Goals Set</small>
+                            <h2 class="savings-amount" id="dash-goal-amount">$0.00 <span
+                                    style="font-size: 14px; color: var(--text-muted); font-weight: 500;">/ $0.00</span>
+                            </h2>
+                            <div class="progress-bg">
+                                <div class="progress-bar" id="dash-goal-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="savings-meta">
+                                <span id="dash-goal-target">Target: -</span>
+                                <span id="dash-goal-percent">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-account" class="view-section hidden">
+            <h1 style="color: white; margin-bottom: 20px;">My Account</h1>
+            <div class="card">
+                <!-- <p style="color: var(--text-muted)">User settings and profile details will go here.</p> -->
+                <div class="settings-group">
+                    <h3
+                        style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        Profile Settings</h3>
+
+                    <div style="display: flex; gap: 30px; align-items: flex-start;">
+
+                        <div class="profile-upload-section" style="text-align: center;">
+                            <div style="position: relative; width: 100px; height: 100px; margin-bottom: 10px;">
+                                <img id="preview-profile-pic" src="https://i.pravatar.cc/100?img=33"
+                                    style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--card-bg); box-shadow: 0 0 0 2px var(--primary);">
+
+                                <label for="profile-pic-input"
+                                    style="position: absolute; bottom: 0; right: 0; background: var(--primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--card-bg);">
+                                    <i class="fas fa-camera" style="font-size: 12px; color: white;"></i>
+                                </label>
+                            </div>
+                            <input type="file" id="profile-pic-input" accept="image/*" style="display: none;">
+                            <small style="color: var(--text-muted); font-size: 11px;">Click icon to edit</small>
+                        </div>
+
+                        <div style="flex: 1;">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" class="form-input" id="acc-name" placeholder="Enter your name">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email (Optional)</label>
+                                <input type="email" class="form-input" id="acc-email" placeholder="student@example.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="saveProfileBtn" class="compact-btn"
+                        style="width: auto; padding: 0 25px; margin-top: 15px;">
+                        <i class="fas fa-save"></i>&nbsp;&nbsp;Save Changes
+                    </button>
+                </div>
+
+                <div class="settings-group" style="margin-top: 40px;">
+                    <h3
+                        style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        App Settings</h3>
+                    <div class="form-group">
+                        <label>Currency Symbol</label>
+                        <select class="form-input" id="acc-currency" style="background: #15151a;">
+                            <option value="$">USD ($)</option>
+                            <option value="€">EUR (€)</option>
+                            <option value="£">GBP (£)</option>
+                            <option value="₹">INR (₹)</option>
+                            <option value="¥">JPY (¥)</option>
+                            <option value="₩">KRW (₩)</option>
+                            <option value="₦">NGN (₦)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Budget Limit ($)</label>
+                        <div class="input-with-icon">
+                            <span>$</span>
+                            <input type="number" class="form-input" id="acc-budget" placeholder="5000">
+                        </div>
+                        <small style="color: var(--text-muted); display: block; margin-top: 5px;">This affects your
+                            Survival Status bar.</small>
+                    </div>
+                </div>
+
+                <div class="settings-group" style="margin-top: 40px;">
+                    <h3
+                        style="color: #ff754c; margin-bottom: 20px; border-bottom: 1px solid rgba(255,117,76,0.2); padding-bottom: 10px;">
+                        Danger Zone</h3>
+
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
+                        Once you delete your data, there is no going back. This will wipe all transactions and reset the
+                        dashboard.
+                    </p>
+
+                    <button id="resetAppBtn"
+                        style="background: rgba(255, 117, 76, 0.15); color: #ff754c; border: 1px solid rgba(255, 117, 76, 0.3); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;">
+                        <i class="fas fa-trash"></i>&nbsp;&nbsp;Reset All Data
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-transaction" class="view-section hidden">
+            <h1 style="color: white; margin-bottom: 20px;">All Transactions</h1>
+            <div class="card">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>History</h3>
+                    </div>
+                    <ul id="transaction-list" style="list-style: none; padding: 0;"></ul>
+                </div>
+                <p style="color: var(--text-muted)">A full list of transaction history will go here.</p>
+            </div>
+        </section>
+        <section id="view-cashflow" class="view-section hidden">
+            <h1 style="color: white; margin-bottom: 20px;">Cash Flow Analytics</h1>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="card" style="padding: 20px; position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; right: -10px; top: -10px; font-size: 80px; color: rgba(108, 93, 211, 0.05); pointer-events: none;">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <small style="color: var(--text-muted); font-size: 13px;">Total Income</small>
+                    <h2 id="cf-total-income" style="font-size: 28px; margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px; position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; right: -10px; top: -10px; font-size: 80px; color: rgba(255, 117, 76, 0.05); pointer-events: none;">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <small style="color: var(--text-muted); font-size: 13px;">Total Expenses</small>
+                    <h2 id="cf-total-expense" style="font-size: 28px; margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card"
+                    style="padding: 20px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                    <small style="color: var(--text-muted); font-size: 13px;">Net Cash Flow</small>
+                    <h2 id="cf-net-flow" style="font-size: 28px; margin-top: 5px; color: #fff;">$0.00</h2>
+                    <span id="cf-status-badge"
+                        style="font-size: 11px; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; color: var(--text-muted);">Neutral</span>
+                </div>
+                <div class="card"
+                    style="padding: 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <small style="color: var(--text-muted); font-size: 13px;">Savings Rate</small>
+                        <h2 id="cf-savings-rate" style="font-size: 28px; margin-top: 5px;">0%</h2>
+                    </div>
+                    <div
+                        style="height: 50px; width: 50px; border-radius: 50%; border: 4px solid var(--card-bg); border-top-color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-piggy-bank" style="color: var(--primary);"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="card" style="padding: 15px;">
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">Highest Earning
+                        Month</small>
+                    <div style="font-weight: 600; color: #00d2aa;" id="metric-best-month">-</div>
+                </div>
+                <div class="card" style="padding: 15px;">
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">Highest Spending
+                        Month</small>
+                    <div style="font-weight: 600; color: #ff754c;" id="metric-worst-month">-</div>
+                </div>
+                <div class="card" style="padding: 15px;">
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">Avg. Monthly
+                        Income</small>
+                    <div style="font-weight: 600; color: white;" id="metric-avg-income">$0.00</div>
+                </div>
+                <div class="card" style="padding: 15px;">
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">Avg. Monthly
+                        Expense</small>
+                    <div style="font-weight: 600; color: white;" id="metric-avg-expense">$0.00</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 25px; height: 500px; margin-bottom: 30px;">
+                <div class="card-header">
+                    <h3>Yearly Overview</h3>
+
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button id="toggleNetBtn" onclick="toggleNetChart()"
+                            style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            <span
+                                style="width: 8px; height: 8px; background: #3f8cff; display: inline-block; border-radius: 50%; margin-right: 5px;"></span>
+                            Show Net
+                        </button>
+
+                        <select id="cf-year-select" onchange="updateCashFlowPage()"
+                            style="background: #25252b; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
+                        </select>
+                    </div>
+                </div>
+                <div style="height: 400px; width: 100%;">
+                    <canvas id="bigCashFlowChart"></canvas>
+                </div>
+                <small style="color: var(--text-muted); text-align: center; display: block; margin-top: 10px;">
+                    <i class="fas fa-hand-pointer"></i> Click on any month bar to see daily breakdown
+                </small>
+            </div>
+
+            <div id="daily-breakdown-section" class="card hidden"
+                style="padding: 25px; height: 450px; animation: fadeIn 0.5s;">
+                <div class="card-header">
+                    <h3 id="daily-chart-title">Daily Breakdown</h3>
+                    <button onclick="closeDailyChart()"
+                        style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+                <div style="height: 350px; width: 100%;">
+                    <canvas id="dailyBreakdownChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-budget" class="view-section hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="color: white; margin: 0;">Budget Planner</h1>
+                <button onclick="resetBudgets()"
+                    style="background: rgba(255, 117, 76, 0.1); color: #ff754c; border: 1px solid rgba(255, 117, 76, 0.2); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                    <i class="fas fa-undo"></i> Reset All
+                </button>
+            </div>
+
+            <div class="card"
+                style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; padding: 30px;">
+                <div>
+                    <small style="color: var(--text-muted); font-size: 14px;">Total Monthly Budget</small>
+                    <h2 id="total-budget-limit" style="font-size: 36px; margin: 5px 0; color: white;">$0.00</h2>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                        Spent: <span id="total-budget-spent" style="color: white;">$0.00</span>
+                        &bull; Remaining: <span id="total-budget-remaining" style="color: #00d2aa;">$0.00</span>
+                    </div>
+                </div>
+
+                <div style="position: relative; width: 100px; height: 100px;">
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#25252b" stroke-width="8"></circle>
+                        <circle id="total-budget-circle" cx="50" cy="50" r="45" fill="none" stroke="#6c5dd3"
+                            stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" transform="rotate(-90 50 50)"
+                            style="transition: 1s ease;"></circle>
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; font-weight: 700; color: rgb(255, 255, 255);"
+                        id="total-budget-percent">0%</div>
+                </div>
+            </div>
+
+            <div id="budget-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            </div>
+        </section>
+        <section id="view-goals" class="view-section hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="color: white; margin: 0;">Savings Goals</h1>
+                <button onclick="openGoalModal()" class="compact-btn">
+                    <i class="fas fa-plus"></i>&nbsp;&nbsp;New Goal
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="card" style="padding: 20px; border-left: 4px solid #6c5dd3;">
+                    <small style="color: var(--text-muted);">Total Saved</small>
+                    <h2 id="goals-total-saved" style="margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px; border-left: 4px solid var(--text-muted);">
+                    <small style="color: var(--text-muted);">Total Target</small>
+                    <h2 id="goals-total-target" style="margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px; border-left: 4px solid #00d2aa;">
+                    <small style="color: var(--text-muted);">Completion</small>
+                    <h2 id="goals-total-percent" style="margin-top: 5px; color: #00d2aa;">0%</h2>
+                </div>
+            </div>
+
+            <div id="goals-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            </div>
+        </section>
+
+        <div class="modal-overlay" id="goalModal">
+            <div class="modal-content" style="width: 350px;">
+                <div class="modal-header">
+                    <h3>Set Savings Goal</h3>
+                    <i class="fas fa-times close-modal" onclick="closeGoalModal()"></i>
+                </div>
+
+                <div class="form-group">
+                    <label>Goal Name</label>
+                    <input type="text" class="form-input" id="goal-name" placeholder="e.g. New Macbook">
+                </div>
+
+                <div class="form-group">
+                    <label>Target Amount</label>
+                    <div class="input-with-icon">
+                        <span>$</span>
+                        <input type="number" class="form-input" id="goal-target" placeholder="2000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Initial Deposit (Optional)</label>
+                    <div class="input-with-icon">
+                        <span>$</span>
+                        <input type="number" class="form-input" id="goal-current" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Color</label>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="color-option selected" onclick="selectGoalColor(this, '#6c5dd3')"
+                            style="background: #6c5dd3;"></div>
+                        <div class="color-option" onclick="selectGoalColor(this, '#00d2aa')"
+                            style="background: #00d2aa;"></div>
+                        <div class="color-option" onclick="selectGoalColor(this, '#ff754c')"
+                            style="background: #ff754c;"></div>
+                        <div class="color-option" onclick="selectGoalColor(this, '#3f8cff')"
+                            style="background: #3f8cff;"></div>
+                        <div class="color-option" onclick="selectGoalColor(this, '#f1c40f')"
+                            style="background: #f1c40f;"></div>
+                    </div>
+                </div>
+
+                <button onclick="saveGoal()" class="submit-btn">Create Goal</button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="budgetModal">
+            <div class="modal-content" style="width: 350px;">
+                <div class="modal-header">
+                    <h3 id="budget-modal-title">Set Budget</h3>
+                    <i class="fas fa-times close-modal" onclick="closeBudgetModal()"></i>
+                </div>
+
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                    Average spending in this category: <strong id="avg-spend-hint" style="color: white;">$0.00</strong>
+                </p>
+
+                <div class="form-group">
+                    <label>Monthly Limit</label>
+                    <div class="input-with-icon">
+                        <span>$</span>
+                        <input type="number" class="form-input" id="budget-limit-input" placeholder="0.00">
+                    </div>
+                </div>
+
+                <button onclick="saveCategoryBudget()" class="submit-btn">Save Limit</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
