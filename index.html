@@ -205,6 +205,12 @@
                     <span class="link-text">Goals</span>
                 </a>
             </li>
+            <li>
+                <a href="#">
+                    <div class="icon"><i class="fas fa-chart-pie"></i></div>
+                    <span class="link-text">Investments</span>
+                </a>
+            </li>
         </ul>
 
         <div class="sidebar-footer">
@@ -276,7 +282,8 @@
 
                                 <div class="mid-amount-wrapper">
                                     <h3 id="monthly-balance-display">$0.00</h3>
-                                    <span class="tag positive mini"><i class="fas fa-arrow-up"></i> 45.2%</span>
+                                    <span id="monthly-balance-percent" class="tag positive mini"><i
+                                            class="fas fa-arrow-up"></i> 0%</span>
                                 </div>
                             </div>
 
@@ -310,8 +317,8 @@
                                 <div class="legend-item">
                                     <div class="dot" style="background: #3f8cff;"></div> Expense
                                 </div>
-                                <select class="year-select">
-                                    <option>2023</option>
+                                <select id="dashboard-year-select" onchange="updateDashboard()"
+                                    style="background: #25252b; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; outline: none;">
                                 </select>
                             </div>
                         </div>
@@ -622,15 +629,15 @@
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-                <div class="card" style="padding: 20px; border-left: 4px solid #6c5dd3;">
+                <div class="card" style="padding: 20px;">
                     <small style="color: var(--text-muted);">Total Saved</small>
                     <h2 id="goals-total-saved" style="margin-top: 5px;">$0.00</h2>
                 </div>
-                <div class="card" style="padding: 20px; border-left: 4px solid var(--text-muted);">
+                <div class="card" style="padding: 20px;">
                     <small style="color: var(--text-muted);">Total Target</small>
                     <h2 id="goals-total-target" style="margin-top: 5px;">$0.00</h2>
                 </div>
-                <div class="card" style="padding: 20px; border-left: 4px solid #00d2aa;">
+                <div class="card" style="padding: 20px;">
                     <small style="color: var(--text-muted);">Completion</small>
                     <h2 id="goals-total-percent" style="margin-top: 5px; color: #00d2aa;">0%</h2>
                 </div>
@@ -641,7 +648,130 @@
             </div>
         </section>
 
-        <div class="modal-overlay" id="goalModal">
+        <section id="view-investments" class="view-section hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="color: white; margin: 0;">Investment Portfolio</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportInvestments('csv')" class="compact-btn"
+                        style="background: rgba(102, 230, 215, 0.1); color: #66e6d7;">
+                        <i class="fas fa-download"></i>&nbsp;&nbsp;CSV
+                    </button>
+                    <button onclick="exportInvestments('excel')" class="compact-btn"
+                        style="background: rgba(108, 93, 211, 0.1); color: #6c5dd3;">
+                        <i class="fas fa-download"></i>&nbsp;&nbsp;Excel
+                    </button>
+                    <button onclick="openInvestmentModal()" class="compact-btn">
+                        <i class="fas fa-plus"></i>&nbsp;&nbsp;Add Investment
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="card" style="padding: 20px;">
+                    <small style="color: var(--text-muted);">Total Invested</small>
+                    <h2 id="inv-total-invested" style="margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px;">
+                    <small style="color: var(--text-muted);">Current Value</small>
+                    <h2 id="inv-total-value" style="margin-top: 5px;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px;">
+                    <small style="color: var(--text-muted);">Gain/Loss</small>
+                    <h2 id="inv-gain-loss" style="margin-top: 5px; color: #00d2aa;">$0.00</h2>
+                </div>
+                <div class="card" style="padding: 20px;">
+                    <small style="color: var(--text-muted);">ROI</small>
+                    <h2 id="inv-roi" style="margin-top: 5px; color: #f1c40f;">0%</h2>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 25px;">
+                <h3 style="color: white; margin-bottom: 20px;">Your Investments</h3>
+                <div class="table-scroll-container">
+                    <table style="width: 100%; border-collapse: collapse; color: white;">
+                        <thead class="sticky-header">
+                            <tr>
+                                <th style="padding: 15px; text-align: left;">Asset Name</th>
+                                <th style="padding: 15px; text-align: left;">Type</th>
+                                <th style="padding: 15px; text-align: right;">Amount Invested</th>
+                                <th style="padding: 15px; text-align: right;">Current Value</th>
+                                <th style="padding: 15px; text-align: right;">Gain/Loss %</th>
+                                <th style="padding: 15px; text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inv-list-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    <i class="fas fa-chart-line"
+                                        style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                                    No investments yet. Start building your portfolio!
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div class="modal-overlay" id="investmentModal">
+            <div class="modal-content" style="width: 400px;">
+                <div class="modal-header">
+                    <h3 id="inv-modal-title">Add Investment</h3>
+                    <i class="fas fa-times close-modal" onclick="closeInvestmentModal()"></i>
+                </div>
+
+                <div class="form-group">
+                    <label>Asset Name</label>
+                    <input type="text" class="form-input" id="inv-name" placeholder="e.g. Apple Stock">
+                </div>
+
+                <div class="form-group">
+                    <label>Investment Type</label>
+                    <select class="form-input" id="inv-type">
+                        <option value="Stock">📈 Stock</option>
+                        <option value="Mutual Fund">🏦 Mutual Fund</option>
+                        <option value="Cryptocurrency">₿ Cryptocurrency</option>
+                        <option value="Bond">📊 Bond</option>
+                        <option value="Real Estate">🏠 Real Estate</option>
+                        <option value="Other">⚙️ Other</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Amount Invested</label>
+                        <div class="input-with-icon">
+                            <span>$</span>
+                            <input type="number" class="form-input" id="inv-amount" placeholder="0.00"
+                                style="padding-left: 30px;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Current Value</label>
+                        <div class="input-with-icon">
+                            <span>$</span>
+                            <input type="number" class="form-input" id="inv-current" placeholder="0.00"
+                                style="padding-left: 30px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Purchase Date</label>
+                    <input type="date" class="form-input" id="inv-date">
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea class="form-input" id="inv-notes" placeholder="e.g. Long-term holding"
+                        style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+
+                <button onclick="saveInvestment()" class="submit-btn">Save Investment</button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="goalModal" style="display: none;">
             <div class="modal-content" style="width: 350px;">
                 <div class="modal-header">
                     <h3>Set Savings Goal</h3>
@@ -687,6 +817,8 @@
 
                 <button onclick="saveGoal()" class="submit-btn">Create Goal</button>
             </div>
+        </div>
+        </div>
         </div>
 
         <div class="modal-overlay" id="budgetModal">
