@@ -259,7 +259,7 @@ function updateDashboard() {
         const d = new Date(txn.date);
         return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
     });
-    
+
     // Fixed Variable Names here:
     const prevIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const prevExpense = prevMonthTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -270,8 +270,8 @@ function updateDashboard() {
     // --- PERCENTAGE CALCULATIONS ---
 
     // A. Net Balance Performance (This Month vs Last Month)
-    const netBalanceChangePercent = prevMonthBalance !== 0 
-        ? (((monthlyBalance - prevMonthBalance) / Math.abs(prevMonthBalance)) * 100).toFixed(1) 
+    const netBalanceChangePercent = prevMonthBalance !== 0
+        ? (((monthlyBalance - prevMonthBalance) / Math.abs(prevMonthBalance)) * 100).toFixed(1)
         : (monthlyBalance > 0 ? 100 : 0);
 
     // B. Total Wealth Growth (Total Balance Growth this month)
@@ -300,7 +300,7 @@ function updateDashboard() {
         budgetDisplay.innerText = formatMoney(monthlyBudget);
         let percentLeft = 0;
         if (monthlyBudget > 0) percentLeft = ((monthlyBudget - monthlyExpense) / monthlyBudget) * 100;
-        
+
         if (percentLeft < 0) percentLeft = 0;
         if (percentLeft > 100) percentLeft = 100;
 
@@ -311,7 +311,7 @@ function updateDashboard() {
     }
 
     // 6. Update Percentage Badges (THIS WAS MISSING)
-    
+
     // A. Top Card: Total Balance (Uses Growth %)
     const topBalTag = document.querySelector('.balance-card-top .tag');
     if (topBalTag) {
@@ -339,12 +339,12 @@ function updateDashboard() {
         incTag.innerHTML = `${incomeChangePct > 0 ? '+' : ''}${incomeChangePct}%`;
         incTag.className = `tag badge ${incomeChangePct >= 0 ? 'positive' : 'negative'}`;
     }
-    
+
     const expTag = document.querySelector('.expense-month .tag.badge');
     if (expTag) {
         expTag.innerHTML = `${expenseChangePct > 0 ? '+' : ''}${expenseChangePct}%`;
-        const isBad = expenseChangePct > 0; 
-        expTag.className = `tag badge ${isBad ? 'negative' : 'positive'}`; 
+        const isBad = expenseChangePct > 0;
+        expTag.className = `tag badge ${isBad ? 'negative' : 'positive'}`;
     }
 
     // 7. Update Charts & Lists
@@ -367,14 +367,41 @@ function updateDashboard() {
         dashboardChart.data.datasets[0].data = mInc;
         dashboardChart.data.datasets[1].data = mExp;
         dashboardChart.update();
+        // 8. Update Spending Chart (Doughnut)
+        const tfEl = document.getElementById('spending-timeframe');
+        const timeframe = tfEl ? tfEl.value : 'month';
+
+        // Calculate totals for each category
+        const categoryTotals = expenseCategories.map(cat => {
+            return transactions.filter(txn => {
+                if (txn.type !== 'expense') return false;
+                // CHECK: Exact Match
+                if (txn.category !== cat) return false;
+
+                const d = new Date(txn.date);
+                if (timeframe === 'month') return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                if (timeframe === 'year') return d.getFullYear() === currentYear;
+                return true;
+            }).reduce((sum, txn) => sum + txn.amount, 0);
+        });
+
+        const totalSpentForChart = categoryTotals.reduce((a, b) => a + b, 0);
+        setTxt('spending-total', formatMoney(totalSpentForChart).replace('.00', ''));
+
+        if (spendingChart) {
+            // FIX: Update Labels AND Data so they always match
+            spendingChart.data.labels = expenseCategories;
+            spendingChart.data.datasets[0].data = categoryTotals;
+            spendingChart.update();
+        }
     }
-    
+
     // Trigger Sub-Page Updates
     renderTransactionList();
     updateCashFlowPage();
     renderBudgetPage();
     renderGoalsPage();
-    if(typeof renderInvestmentsPage === 'function') renderInvestmentsPage();
+    if (typeof renderInvestmentsPage === 'function') renderInvestmentsPage();
 }
 // ==========================================
 //  5. PAGE LOGIC: TRANSACTIONS
