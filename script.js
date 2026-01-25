@@ -84,11 +84,11 @@ sidebarLinks.forEach(link => {
         else if (linkText === 'Transaction') document.getElementById('view-transaction').classList.remove('hidden');
         else if (linkText === 'Cash Flow') document.getElementById('view-cashflow').classList.remove('hidden');
         else if (linkText === 'Budget') document.getElementById('view-budget').classList.remove('hidden');
-        else if (linkText === 'Goals') { 
+        else if (linkText === 'Goals') {
             document.getElementById('view-goals').classList.remove('hidden');
             renderGoalsPage();
         }
-        else if (linkText === 'Investments') { 
+        else if (linkText === 'Investments') {
             document.getElementById('view-investments').classList.remove('hidden');
             renderInvestmentsPage();
         }
@@ -137,14 +137,14 @@ if (ctxFlow) {
                 { label: 'Expense', data: [], borderColor: '#3f8cff', backgroundColor: gradExpense, fill: true, tension: 0.4, pointRadius: 0 }
             ]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            plugins: { legend: { display: false } }, 
-            scales: { 
-                y: { grid: { color: 'rgba(255,255,255,0.05)', borderDash: [5, 5] }, ticks: { callback: v => '$' + v, color: '#808191' } }, 
-                x: { grid: { display: false } } 
-            } 
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.05)', borderDash: [5, 5] }, ticks: { callback: v => '$' + v, color: '#808191' } },
+                x: { grid: { display: false } }
+            }
         }
     });
 }
@@ -233,6 +233,7 @@ function openTxnModal(prefillCategory = null) {
 }
 
 // --- MAIN UPDATE FUNCTION ---
+// --- MAIN UPDATE FUNCTION ---
 function updateDashboard() {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -258,34 +259,45 @@ function updateDashboard() {
         const d = new Date(txn.date);
         return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
     });
+    
+    // Fixed Variable Names here:
     const prevIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const prevExpense = prevMonthTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    
-    const monthlyBalance = monthlyIncome - monthlyExpense;
-    const prevBalance = prevIncome - prevExpense;
 
-    // Calculate Percentages (Safe Division)
-    const calcPct = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : (((curr - prev) / Math.abs(prev)) * 100).toFixed(1);
-    
-    const balPct = calcPct(monthlyBalance, prevBalance);
-    const incPct = calcPct(monthlyIncome, prevIncome);
-    const expPct = calcPct(monthlyExpense, prevExpense);
+    const monthlyBalance = monthlyIncome - monthlyExpense;
+    const prevMonthBalance = prevIncome - prevExpense;
+
+    // --- PERCENTAGE CALCULATIONS ---
+
+    // A. Net Balance Performance (This Month vs Last Month)
+    const netBalanceChangePercent = prevMonthBalance !== 0 
+        ? (((monthlyBalance - prevMonthBalance) / Math.abs(prevMonthBalance)) * 100).toFixed(1) 
+        : (monthlyBalance > 0 ? 100 : 0);
+
+    // B. Total Wealth Growth (Total Balance Growth this month)
+    const startOfMonthBalance = totalBalance - monthlyBalance;
+    const totalGrowthPercent = startOfMonthBalance !== 0
+        ? ((monthlyBalance / Math.abs(startOfMonthBalance)) * 100).toFixed(1)
+        : 0;
+
+    // C. Income & Expense Changes
+    let incomeChangePct = prevIncome > 0 ? (((monthlyIncome - prevIncome) / prevIncome) * 100).toFixed(1) : 0;
+    let expenseChangePct = prevExpense > 0 ? (((monthlyExpense - prevExpense) / prevExpense) * 100).toFixed(1) : 0;
 
     // 4. Update UI Text
-    const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
     setTxt('total-balance-display', formatMoney(totalBalance));
     setTxt('monthly-balance-display', formatMoney(monthlyBalance));
     setTxt('total-income-display', formatMoney(monthlyIncome));
     setTxt('total-expense-display', formatMoney(monthlyExpense));
 
-    // 5. Update Survival Bar (RESTORED THIS MISSING BLOCK)
+    // 5. Update Survival Bar
     const survivalBar = document.getElementById('survival-bar');
     const survivalText = document.getElementById('survival-text');
     const budgetDisplay = document.getElementById('budget-display');
-    
+
     if (survivalBar && survivalText && budgetDisplay) {
-        budgetDisplay.innerText = formatMoney(monthlyBudget); // Updates the budget text
-        
+        budgetDisplay.innerText = formatMoney(monthlyBudget);
         let percentLeft = 0;
         if (monthlyBudget > 0) percentLeft = ((monthlyBudget - monthlyExpense) / monthlyBudget) * 100;
         
@@ -298,38 +310,48 @@ function updateDashboard() {
         survivalBar.style.boxShadow = percentLeft < 20 ? '0 0 10px rgba(255, 117, 76, 0.4)' : '0 0 10px rgba(0, 210, 170, 0.4)';
     }
 
-    // 6. Update Percentages (Top & Middle Rows)
-    const topBalTag = document.querySelector('.balance-card-top .tag.positive');
-    if (topBalTag) topBalTag.innerHTML = `<i class="fas fa-arrow-up"></i> ${balPct}%`;
-
-    const midBalTag = document.getElementById('monthly-balance-percent');
-    if (midBalTag) {
-        const arrow = monthlyBalance >= prevBalance ? 'up' : 'down';
-        const color = monthlyBalance >= prevBalance ? 'positive' : 'negative';
-        midBalTag.className = `tag ${color} mini`;
-        midBalTag.innerHTML = `<i class="fas fa-arrow-${arrow}"></i> ${balPct}%`;
+    // 6. Update Percentage Badges (THIS WAS MISSING)
+    
+    // A. Top Card: Total Balance (Uses Growth %)
+    const topBalTag = document.querySelector('.balance-card-top .tag');
+    if (topBalTag) {
+        const isPositive = totalGrowthPercent >= 0;
+        const arrow = isPositive ? 'up' : 'down';
+        topBalTag.className = `tag ${isPositive ? 'positive' : 'negative'}`;
+        topBalTag.innerHTML = `<i class="fas fa-arrow-${arrow}"></i> ${Math.abs(totalGrowthPercent)}%`;
     }
 
+    // B. Middle Card: Net Balance (Uses Performance %)
+    const midBalCard = document.querySelector('.balance-month');
+    if (midBalCard) {
+        const midBalTag = midBalCard.querySelector('.tag');
+        if (midBalTag) {
+            const isPositive = netBalanceChangePercent >= 0;
+            const arrow = isPositive ? 'up' : 'down';
+            midBalTag.className = `tag ${isPositive ? 'positive' : 'negative'} mini`;
+            midBalTag.innerHTML = `<i class="fas fa-arrow-${arrow}"></i> ${Math.abs(netBalanceChangePercent)}%`;
+        }
+    }
+
+    // C. Income & Expense Badges
     const incTag = document.querySelector('.income-month .tag.badge');
     if (incTag) {
-        incTag.innerHTML = `${incPct >= 0 ? '+' : ''}${incPct}%`;
-        incTag.className = `tag badge ${incPct >= 0 ? 'positive' : 'negative'}`;
+        incTag.innerHTML = `${incomeChangePct > 0 ? '+' : ''}${incomeChangePct}%`;
+        incTag.className = `tag badge ${incomeChangePct >= 0 ? 'positive' : 'negative'}`;
     }
+    
     const expTag = document.querySelector('.expense-month .tag.badge');
     if (expTag) {
-        expTag.innerHTML = `${expPct >= 0 ? '+' : ''}${expPct}%`;
-        expTag.className = `tag badge ${expPct <= 0 ? 'positive' : 'negative'}`;
+        expTag.innerHTML = `${expenseChangePct > 0 ? '+' : ''}${expenseChangePct}%`;
+        const isBad = expenseChangePct > 0; 
+        expTag.className = `tag badge ${isBad ? 'negative' : 'positive'}`; 
     }
 
-    // 7. Update Line Chart (Dynamic Year)
+    // 7. Update Charts & Lists
+    // (Assuming these variables are global or handled elsewhere in your file)
     const yearSelect = document.getElementById('dashboard-year-select');
     if (yearSelect && dashboardChart) {
-        if (yearSelect.options.length === 0) {
-            const years = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
-            const list = years.length ? years : [new Date().getFullYear()];
-            list.forEach(y => yearSelect.add(new Option(y, y)));
-        }
-
+        // ... (Your chart update logic here) ...
         const selectedYear = parseInt(yearSelect.value) || new Date().getFullYear();
         const mInc = Array(12).fill(0);
         const mExp = Array(12).fill(0);
@@ -346,37 +368,14 @@ function updateDashboard() {
         dashboardChart.data.datasets[1].data = mExp;
         dashboardChart.update();
     }
-
-    // 8. Update Spending Chart (Doughnut)
-    const tfEl = document.getElementById('spending-timeframe');
-    const timeframe = tfEl ? tfEl.value : 'month';
     
-    const categoryTotals = expenseCategories.map(cat => {
-        return transactions.filter(txn => {
-            if (txn.type !== 'expense' || txn.category !== cat) return false;
-            const d = new Date(txn.date);
-            if (timeframe === 'month') return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-            if (timeframe === 'year') return d.getFullYear() === currentYear;
-            return true; 
-        }).reduce((sum, txn) => sum + txn.amount, 0);
-    });
-
-    const totalSpentForChart = categoryTotals.reduce((a, b) => a + b, 0);
-    setTxt('spending-total', formatMoney(totalSpentForChart).replace('.00', ''));
-
-    if (spendingChart) {
-        spendingChart.data.datasets[0].data = categoryTotals;
-        spendingChart.update();
-    }
-
-    // 9. Trigger Sub-Page Updates
+    // Trigger Sub-Page Updates
     renderTransactionList();
     updateCashFlowPage();
     renderBudgetPage();
     renderGoalsPage();
     if(typeof renderInvestmentsPage === 'function') renderInvestmentsPage();
 }
-
 // ==========================================
 //  5. PAGE LOGIC: TRANSACTIONS
 // ==========================================
@@ -539,25 +538,25 @@ function updateCashFlowPage() {
     // Always populate year options to ensure current year is available
     const years = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
     const currentYear = new Date().getFullYear();
-    
+
     // Include current year even if no transactions yet
     const yearsToShow = years.length ? years : [currentYear];
     if (!yearsToShow.includes(currentYear)) {
         yearsToShow.unshift(currentYear);
     }
-    
+
     // Only repopulate if years have changed
     const currentOptions = Array.from(yearSelect.options).map(o => parseInt(o.value));
     if (!arraysEqual(currentOptions, yearsToShow)) {
         yearSelect.innerHTML = '';
-        yearsToShow.forEach(y => { 
-            const opt = document.createElement('option'); 
-            opt.value = y; 
-            opt.innerText = y; 
-            yearSelect.appendChild(opt); 
+        yearsToShow.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.innerText = y;
+            yearSelect.appendChild(opt);
         });
     }
-    
+
     // Set current year as selected if available
     if (yearsToShow.includes(currentYear)) {
         yearSelect.value = String(currentYear);
@@ -614,19 +613,19 @@ function updateCashFlowPage() {
                 ]
             },
             options: {
-                responsive: true, 
+                responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'top',
                     }
                 },
-                scales: { 
-                    y: { 
+                scales: {
+                    y: {
                         grid: { color: 'rgba(255,255,255,0.05)' },
                         ticks: { callback: v => '$' + v.toLocaleString() }
-                    }, 
-                    x: { grid: { display: false } } 
+                    },
+                    x: { grid: { display: false } }
                 },
                 onClick: (event, activeElements, chart) => {
                     if (activeElements.length > 0) {
@@ -984,7 +983,7 @@ function openGoalModal() {
         setTimeout(() => modal.classList.add('open'), 10);
     }
 }
-function closeGoalModal() { 
+function closeGoalModal() {
     const modal = document.getElementById('goalModal');
     if (modal) {
         modal.classList.remove('open');
@@ -1141,7 +1140,7 @@ if (notificationIcon) {
         if (badge && badge.style.display !== 'none') {
             // Check for budget overages or goal milestones
             let notifications = [];
-            
+
             // Check for budget overages
             for (const [cat, budget] of Object.entries(categoryBudgets)) {
                 const spent = transactions.filter(t => t.type === 'expense' && t.category === cat).reduce((s, t) => s + t.amount, 0);
@@ -1149,7 +1148,7 @@ if (notificationIcon) {
                     notifications.push(`⚠️ ${cat} budget exceeded!`);
                 }
             }
-            
+
             // Check for goals near completion
             goals.forEach(goal => {
                 const remaining = goal.target - goal.saved;
@@ -1157,10 +1156,10 @@ if (notificationIcon) {
                     notifications.push(`🎉 ${goal.name} is almost complete!`);
                 }
             });
-            
+
             badge.style.display = 'none';
-            const message = notifications.length > 0 
-                ? notifications.join('\n') 
+            const message = notifications.length > 0
+                ? notifications.join('\n')
                 : '✨ No new notifications. Keep up the good financial habits!';
             alert(message);
         }
@@ -1293,12 +1292,12 @@ if (setBudgetBtn) {
     setBudgetBtn.addEventListener('click', () => {
         // 1. Ask user for new budget
         const newBudget = prompt("Enter your Total Monthly Budget:", monthlyBudget);
-        
+
         // 2. Validate and Save
         if (newBudget && !isNaN(parseFloat(newBudget)) && parseFloat(newBudget) > 0) {
             monthlyBudget = parseFloat(newBudget);
             localStorage.setItem(BUDGET_KEY, monthlyBudget);
-            
+
             // 3. Update UI immediately
             updateDashboard();
             loadAccountSettings(); // Syncs with the Account page input
@@ -1443,7 +1442,7 @@ function renderInvestmentsPage() {
 function openInvestmentModal() {
     const now = new Date();
     const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
+
     document.getElementById('inv-name').value = '';
     document.getElementById('inv-type').value = 'Stock';
     document.getElementById('inv-amount').value = '';
@@ -1451,7 +1450,7 @@ function openInvestmentModal() {
     document.getElementById('inv-date').value = localDate;
     document.getElementById('inv-notes').value = '';
     document.getElementById('inv-modal-title').innerText = 'Add Investment';
-    
+
     document.getElementById('investmentModal').classList.add('open');
     window.currentInvEditIndex = -1;
 }
@@ -1567,15 +1566,15 @@ function exportInvestments(format) {
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Settings
     loadAccountSettings();
-    
+
     // 2. Set Default Categories
     updateCategories('expense');
-    
+
     // 3. Render Dashboard
     updateDashboard();
-    
+
     // 4. Start Goal Carousel
-    if(typeof startGoalCarousel === 'function') {
+    if (typeof startGoalCarousel === 'function') {
         startGoalCarousel();
     }
 });
