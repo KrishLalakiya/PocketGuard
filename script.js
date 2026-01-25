@@ -1560,8 +1560,21 @@ function exportInvestments(format) {
     alert(`Investments exported as ${format.toUpperCase()}!`);
 }
 // ==========================================
+//  SCROLL EFFECT FOR TOP BAR
+// ==========================================
+const topHeader = document.querySelector('.top-header');
+
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) { // If scrolled down more than 20px
+        topHeader.classList.add('scrolled');
+    } else {
+        topHeader.classList.remove('scrolled');
+    }
+});
+// ==========================================
 //  11. INITIAL RUN
 // ==========================================
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Settings

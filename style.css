@@ -53,6 +53,15 @@ body {
     padding: 0 30px;
     padding-left: 18px;
     z-index: 1000;
+
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.top-header.scrolled {
+    background-color: rgba(11, 11, 15, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .header-left,
@@ -833,32 +842,127 @@ body {
 /* =========================================
    11. RESPONSIVE MEDIA QUERIES
    ========================================= */
-@media (max-width: 1200px) {
+/* --- Tablet & Mobile (Max Width: 1024px) --- */
+@media (max-width: 1024px) {
+
+    /* 1. Layout Reset */
     .dashboard-grid {
         grid-template-columns: 1fr;
+        /* Stack Left and Right columns */
+        gap: 20px;
     }
 
+    /* 2. Sidebar Logic for Mobile/Tablet */
+    .sidebar {
+        left: -100%;
+        /* Hide off-screen by default */
+        width: 260px;
+        z-index: 2000;
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    /* This class is toggled by your JS */
+    .sidebar.mobile-active {
+        left: 0 !important;
+    }
+
+    .main-content,
+    .main-content.expanded {
+        margin-left: 0 !important;
+        /* Remove sidebar margin */
+        width: 100%;
+        padding: 15px;
+        /* Reduce padding */
+    }
+
+    /* 3. Top Row Stacking */
     .top-row {
         flex-direction: column;
+        gap: 20px;
     }
 
     .balance-card-top,
     .survival-card {
-        flex: 1;
         width: 100%;
+        flex: auto;
+    }
+
+    /* 4. Stats Row */
+    .middle-stats-row {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns on tablet */
+    }
+
+    /* 5. Header Adjustments */
+    .search-bar {
+        display: none;
+        /* Hide search on smaller screens to save space */
     }
 }
 
-@media (max-width: 1024px) {
+/* --- Mobile Only (Max Width: 768px) --- */
+@media (max-width: 768px) {
+
+    /* 1. Stack Middle Stats Completely */
     .middle-stats-row {
         grid-template-columns: 1fr;
     }
+
+    /* 2. KPI Cards (Cash Flow / Investments) */
+    div[style*="grid-template-columns: repeat(4, 1fr)"],
+    div[style*="grid-template-columns: repeat(3, 1fr)"] {
+        grid-template-columns: 1fr 1fr !important;
+        /* 2x2 grid */
+    }
+
+    /* 3. Modal Fixes */
+    .modal-content {
+        width: 90% !important;
+        /* Prevent overflow */
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    /* 4. Filter Modal */
+    .filter-grid {
+        flex-direction: column;
+        height: auto;
+        max-height: 60vh;
+    }
+
+    .filter-types {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-right: 0;
+        padding-bottom: 15px;
+        flex-direction: row;
+        justify-content: space-between;
+    }
 }
 
+/* --- Small Mobile (Max Width: 480px) --- */
 @media (max-width: 480px) {
+
+    /* 1. Header Cleanup */
+    .top-header {
+        padding: 0 15px;
+    }
+
+    .logo span,
+    .top-header p {
+        display: none;
+        /* Hide text, keep logo icon */
+    }
+
+    .user-profile .text-info {
+        display: none;
+        /* Hide name, keep avatar */
+    }
+
+    /* 2. Balance Card Internals */
     .balance-card-top {
         flex-direction: column !important;
-        align-items: flex-start;
+        align-items: flex-start !important;
         gap: 20px;
     }
 
@@ -869,11 +973,38 @@ body {
 
     .compact-btn {
         width: 100%;
-        border-radius: 12px;
+        /* Full width buttons */
     }
 
-    .modal-content {
-        width: 95%;
+    /* 3. KPI Cards - Stack Vertically */
+    div[style*="grid-template-columns: repeat(4, 1fr)"],
+    div[style*="grid-template-columns: repeat(3, 1fr)"],
+    div[style*="grid-template-columns: 1fr 1fr !important"] {
+        grid-template-columns: 1fr !important;
+        /* 1 column */
+    }
+
+    /* 4. Table Scrolling */
+    .table-scroll-container {
+        overflow-x: auto;
+        /* Ensure tables scroll horizontally */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 5. Budget & Goals Grid */
+    #budget-grid,
+    #goals-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 6. Settings Page */
+    .settings-group>div[style*="display: flex"] {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-upload-section {
+        margin-bottom: 20px;
     }
 }
 
