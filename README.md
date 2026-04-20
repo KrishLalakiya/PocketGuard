@@ -1,30 +1,16 @@
-# PocketGuard - Personal Finance Tracker 💰
-2nd Term End-Term Project
+# React + Vite
 
-## 📌 Project Description
-PocketGuard is a comprehensive personal finance dashboard designed to help users track their income, expenses, savings goals, and investment portfolios. It solves the problem of financial unawareness by providing real-time analytics, visual charts, and budget tracking in a browser-based environment without the need for backend servers.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Features Implemented
-- **Dashboard Analytics:** Real-time calculation of Total Balance, Net Cash Flow, and Survival Status.
-- **Transaction Management:** Add, edit, delete, and filter transactions (Income/Expense).
-- **Dynamic Visualizations:** Interactive charts using Chart.js for spending breakdown and cash flow trends.
-- **Budget Planner:** Visual progress bars indicating budget usage per category with "Percentage Left" logic.
-- **Savings Goals:** Goal tracking with AI-simulated insights on completion timeframes.
-- **Investment Portfolio:** Track stocks/crypto and export data to CSV.
-- **Data Persistence:** All data is saved locally using Browser LocalStorage.
+Currently, two official plugins are available:
 
-## 🧱 DOM Concepts Used
-1.  **Element Creation:** Dynamic generation of transaction rows and goal cards using `document.createElement` and Template Literals.
-2.  **Event Handling:** Extensive use of `addEventListener` for modals, form submissions, and dynamic delete buttons (Event Delegation).
-3.  **DOM Traversal:** Querying parent/child nodes to update specific UI cards based on IDs.
-4.  **Class Manipulation:** Using `classList.toggle` for the sidebar navigation and modal visibility.
-5.  **Dynamic Styling:** Updating CSS variables and inline styles (e.g., progress bar widths) via JavaScript.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## ⚙️ Steps to Run the Project
-1.  Clone the repository or download the ZIP file.
-2.  Open `index.html` in any modern web browser (Chrome/Firefox/Edge).
-3.  (Optional) For best experience, use a local server (e.g., Live Server in VS Code) to ensure no CORS issues with modules, though the app supports direct file opening.
+## React Compiler
 
-## ⚠️ Known Limitations
--   Data is stored in `localStorage`, so clearing browser cache will wipe the data.
--   Export functionality is limited to `.csv` format for Investments.
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
